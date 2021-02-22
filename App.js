@@ -1,93 +1,24 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import * as Location from 'expo-location';
-import { WEATHER_API_KEY } from 'react-native-dotenv';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Provider } from 'react-redux';
 
-import { WeatherInfo, UnitsPicker, ReloadIcon, WeatherDetails } from './components';
-import { colors } from './utils';
+import store from './src/store';
 
-const BASE_WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather?';
+import Temp from './src/screens/Temp';
+import Search from './src/screens/Search';
+
+const Stack = createStackNavigator();
 
 export default function App() {
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [currentWeather, setCurrentWeather] = useState(null);
-  const [unitsSystem, setUnitsSystem] = useState('metric');
-
-  useEffect(() => {
-    load();
-  }, [unitsSystem]);
-
-  async function load() {
-    setCurrentWeather(null);
-    setErrorMessage(null);
-
-    try {
-      const { status } = await Location.requestPermissionsAsync();
-
-      if (status !== 'granted') {
-        setErrorMessage('Access to location is needed to run the App.');
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync();
-      
-      const { latitude, longitude } = location.coords;
-
-      const weatherURL = 
-        `${BASE_WEATHER_URL}lat=${latitude}&lon=${longitude}&units=${unitsSystem}&appid=${WEATHER_API_KEY}`;
-
-      const response = await fetch(weatherURL);
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setCurrentWeather(result);
-      } else {
-        setErrorMessage(result.message);
-      }
-    } catch(err) {
-      setErrorMessage(err.message);
-    }
-  }
-
-  if (currentWeather) {
-    return (
-      <View style={styles.container}>
-        <StatusBar style="auto" />
-        <View style={styles.main}>
-          <UnitsPicker unitsSystem={unitsSystem} setUnitsSystem={setUnitsSystem} />
-          <ReloadIcon load={load} />
-          <WeatherInfo currentWeather={currentWeather} />
-        </View>
-        <WeatherDetails currentWeather={currentWeather} unitsSystem={unitsSystem} />
-      </View>
-    );
-  } else if (errorMessage) {
-    return (
-      <View style={styles.container}>
-        <ReloadIcon load={load} />
-        <Text style={{ textAlign: 'center' }}>{errorMessage}</Text>
-        <StatusBar style="auto" />
-      </View>
-    );
-  } else {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={colors.PRIMARY_COLOR} />
-        <StatusBar style="auto" />
-      </View>
-    )
-  }
+  return (
+    <Provider store={store}>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Search">
+          <Stack.Screen name="Temp" component={Temp} />
+          <Stack.Screen name="Search" component={Search} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </Provider>
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  main: {
-    justifyContent: 'center',
-    flex: 1
-  }
-});
